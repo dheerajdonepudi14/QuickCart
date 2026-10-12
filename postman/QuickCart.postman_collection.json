@@ -1,0 +1,761 @@
+{
+  "info": {
+    "name": "QuickCart API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Hyperlocal quick-commerce API (Spring Boot). Auth uses HttpOnly cookies \u2014 run a Login request first. Payments: Razorpay, PhonePe, UPI/Google Pay, Stripe, mock and COD."
+  },
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Login as shopper",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"shopper@quickcart.dev\",\n  \"password\": \"Shopper@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "description": "Sets HttpOnly qc_access / qc_refresh cookies (Postman keeps them in its cookie jar)."
+        },
+        {
+          "name": "Login as admin",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@quickcart.dev\",\n  \"password\": \"Admin@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Login as rider",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rider1.blr-kor-01@quickcart.dev\",\n  \"password\": \"Rider@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Test User\",\n  \"email\": \"test{{$timestamp}}@example.com\",\n  \"phoneNumber\": \"\",\n  \"password\": \"Secret@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/auth/me"
+          }
+        },
+        {
+          "name": "Refresh token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/refresh-token"
+          }
+        },
+        {
+          "name": "OAuth providers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/auth/providers"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/logout"
+          }
+        }
+      ],
+      "description": "Cookie-based JWT auth. Run a login first; later requests reuse the cookies."
+    },
+    {
+      "name": "2. Stores & catalog",
+      "item": [
+        {
+          "name": "List dark stores",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/stores"
+          }
+        },
+        {
+          "name": "Nearest store",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/stores/nearest?lat={{lat}}&lng={{lng}}"
+          }
+        },
+        {
+          "name": "Store by pincode",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/stores/by-pincode/{{pincode}}"
+          }
+        },
+        {
+          "name": "Categories",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/catalog/categories"
+          }
+        },
+        {
+          "name": "Products in store",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/catalog/stores/{{storeId}}/products?category=fruits-vegetables&sort=discount&page=0&size=24"
+          }
+        },
+        {
+          "name": "Search products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/catalog/stores/{{storeId}}/products?q=milk"
+          }
+        },
+        {
+          "name": "Top savers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/catalog/stores/{{storeId}}/top-savers"
+          }
+        },
+        {
+          "name": "Autocomplete",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/catalog/stores/{{storeId}}/suggest?q=toma"
+          }
+        },
+        {
+          "name": "Product detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/catalog/stores/{{storeId}}/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Platform stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Addresses & geo",
+      "item": [
+        {
+          "name": "Address autocomplete",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/geo/autocomplete?q=Koramangala 5th block&lat={{lat}}&lng={{lng}}"
+          },
+          "description": "Google Places (New) when GOOGLE_MAPS_API_KEY is set, else Photon/OpenStreetMap."
+        },
+        {
+          "name": "Reverse geocode",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/geo/reverse?lat={{lat}}&lng={{lng}}"
+          }
+        },
+        {
+          "name": "Geocode typed address",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/geo/geocode?line2=80 Feet Road&locality=Koramangala&city=Bengaluru&pincode=560034"
+          }
+        },
+        {
+          "name": "My addresses",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/me/addresses"
+          }
+        },
+        {
+          "name": "Save address (server geocodes)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/me/addresses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Home\",\n  \"contactName\": \"Demo Shopper\",\n  \"contactPhone\": \"+919000000002\",\n  \"line1\": \"12B, Sobha Lotus\",\n  \"line2\": \"80 Feet Road\",\n  \"locality\": \"Koramangala\",\n  \"landmark\": \"Opposite the park\",\n  \"city\": \"Bengaluru\",\n  \"state\": \"Karnataka\",\n  \"pincode\": \"560034\",\n  \"makeDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "description": "No latitude/longitude \u2192 the backend geocodes the address and returns 422 if it can't be located."
+        }
+      ]
+    },
+    {
+      "name": "4. Checkout & payments",
+      "item": [
+        {
+          "name": "Quote cart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/checkout/quote",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": 1,\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"quantity\": 2\n    }\n  ],\n  \"couponCode\": \"WELCOME50\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Coupons",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/checkout/coupons"
+          }
+        },
+        {
+          "name": "Payment config",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/payments/config"
+          }
+        },
+        {
+          "name": "Checkout (idempotent)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/checkout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storeId\": 1,\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"quantity\": 2\n    }\n  ],\n  \"addressId\": null,\n  \"deliveryAddress\": \"12B, Sobha Lotus, Koramangala, Bengaluru 560034\",\n  \"paymentMethod\": \"MOCK_ONLINE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "description": "paymentMethod: RAZORPAY | PHONEPE | UPI | STRIPE | MOCK_ONLINE | CASH_ON_DELIVERY. Re-sending with the same Idempotency-Key returns the same order."
+        },
+        {
+          "name": "Payment status (reconciles)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/payments/{{orderId}}/status"
+          }
+        },
+        {
+          "name": "New payment session (retry)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/payments/{{orderId}}/session"
+          }
+        },
+        {
+          "name": "Mock pay \u2014 success",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/payments/mock/{{orderId}}/confirm",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"success\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Razorpay verify",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/payments/razorpay/{{orderId}}/verify",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayOrderId\": \"order_xxx\",\n  \"razorpayPaymentId\": \"pay_xxx\",\n  \"razorpaySignature\": \"<hmac>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "UPI \u2014 I've paid",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/payments/upi/{{orderId}}/submitted",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"utr\": \"123456789012\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Payment transactions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/payments/{{orderId}}/transactions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Orders & tracking",
+      "item": [
+        {
+          "name": "My orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/orders"
+          }
+        },
+        {
+          "name": "Order detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}"
+          }
+        },
+        {
+          "name": "Tracking snapshot (poll fallback)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/tracking"
+          }
+        },
+        {
+          "name": "Cancel order (refunds online payments)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/cancel",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Changed my mind\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Rider app",
+      "item": [
+        {
+          "name": "My deliveries",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/delivery/orders"
+          }
+        },
+        {
+          "name": "Push GPS fix",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/delivery/orders/{{orderId}}/location",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 12.9365,\n  \"longitude\": 77.626\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mark delivered",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/delivery/orders/{{orderId}}/delivered"
+          }
+        }
+      ],
+      "description": "Log in as a rider first."
+    },
+    {
+      "name": "7. Admin",
+      "item": [
+        {
+          "name": "My stores",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/admin/stores"
+          }
+        },
+        {
+          "name": "Inventory",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/inventory?lowStock=false&page=0&size=25"
+          }
+        },
+        {
+          "name": "Update inventory row",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/admin/inventory/{{inventoryId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockQuantity\": 50,\n  \"salePrice\": 39.0,\n  \"available\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Live orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/orders?scope=live"
+          }
+        },
+        {
+          "name": "Riders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/agents"
+          }
+        },
+        {
+          "name": "Order action",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/actions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"pack\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "description": "action: pack | assign (agentId) | deliver | cancel (reason) | verify-payment | reject-payment"
+        },
+        {
+          "name": "Analytics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/admin/stores/{{storeId}}/analytics?range=daily"
+          }
+        },
+        {
+          "name": "Users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/admin/users?filter=loggedIn"
+          }
+        },
+        {
+          "name": "Products (image manager)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/admin/products?missingImage=true"
+          }
+        },
+        {
+          "name": "Set product image / variant B / alt",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/image",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageUrl\": \"https://upload.wikimedia.org/wikipedia/commons/8/89/Tomato_je.jpg\",\n  \"variant\": \"A\",\n  \"alt\": \"Fresh red tomatoes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Promote A/B variant",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/admin/products/{{productId}}/image/promote"
+          }
+        },
+        {
+          "name": "Storage provider",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/admin/storage"
+          }
+        }
+      ],
+      "description": "Log in as admin@quickcart.dev first."
+    },
+    {
+      "name": "8. Webhooks (gateway \u2192 server)",
+      "item": [
+        {
+          "name": "Razorpay webhook",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/payments/razorpay/webhook",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"payment.captured\",\n  \"payload\": {\n    \"payment\": {\n      \"entity\": {\n        \"id\": \"pay_xxx\",\n        \"order_id\": \"order_xxx\",\n        \"status\": \"captured\",\n        \"amount\": 14700\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "X-Razorpay-Signature",
+                "value": "<hmac>"
+              },
+              {
+                "key": "X-Razorpay-Event-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "description": "Requires a valid X-Razorpay-Signature (HMAC-SHA256 of the body with RAZORPAY_WEBHOOK_SECRET)."
+        },
+        {
+          "name": "PhonePe webhook",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/payments/phonepe/webhook",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"checkout.order.completed\",\n  \"payload\": {\n    \"merchantOrderId\": \"QC...\",\n    \"state\": \"COMPLETED\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "<sha256>"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "description": "Authorization = SHA256(username:password)."
+        }
+      ]
+    },
+    {
+      "name": "9. Ops",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "Prometheus metrics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/actuator/prometheus"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "storeId",
+      "value": "1"
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    },
+    {
+      "key": "orderId",
+      "value": "1"
+    },
+    {
+      "key": "inventoryId",
+      "value": "1"
+    },
+    {
+      "key": "lat",
+      "value": "12.9352"
+    },
+    {
+      "key": "lng",
+      "value": "77.6245"
+    },
+    {
+      "key": "pincode",
+      "value": "560034"
+    }
+  ]
+}

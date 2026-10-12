@@ -1,0 +1,114 @@
+# QuickCart — full stack.
+#   docker compose up --build                      → postgres + backend + frontend (http://localhost:3000)
+#   docker compose --profile monitoring up --build → + Prometheus (:9090) and Grafana (:3001, admin/admin)
+# Secrets and gateway keys live in .env next to this file (see .env.example).
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: quickcart
+      POSTGRES_USER: quickcart
+      POSTGRES_PASSWORD: quickcart
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quickcart -d quickcart"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      # Local Postgres by default; set DB_URL/DB_USERNAME/DB_PASSWORD in .env to use Supabase Postgres instead.
+      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/quickcart}
+      DB_USERNAME: ${DB_USERNAME:-quickcart}
+      DB_PASSWORD: ${DB_PASSWORD:-quickcart}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      JWT_SECRET: ${JWT_SECRET:-cXVpY2tjYXJ0LWRldi1zZWNyZXQta2V5LWNoYW5nZS1tZS1pbi1wcm9kdWN0aW9uLTEyMzQ1Njc4OTA=}
+      # Social login
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-disabled}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-disabled}
+      # Payments
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+      PHONEPE_CLIENT_ID: ${PHONEPE_CLIENT_ID:-}
+      PHONEPE_CLIENT_SECRET: ${PHONEPE_CLIENT_SECRET:-}
+      PHONEPE_CLIENT_VERSION: ${PHONEPE_CLIENT_VERSION:-1}
+      PHONEPE_ENV: ${PHONEPE_ENV:-SANDBOX}
+      PHONEPE_WEBHOOK_USERNAME: ${PHONEPE_WEBHOOK_USERNAME:-}
+      PHONEPE_WEBHOOK_PASSWORD: ${PHONEPE_WEBHOOK_PASSWORD:-}
+      UPI_VPA: ${UPI_VPA:-}
+      UPI_PAYEE_NAME: ${UPI_PAYEE_NAME:-QuickCart}
+      UPI_SANDBOX_AUTO_CONFIRM: ${UPI_SANDBOX_AUTO_CONFIRM:-true}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      # Product images: object storage + CDN
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-auto}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-product-images}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-ap-south-1}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-}
+      IMAGE_CDN_BASE_URL: ${IMAGE_CDN_BASE_URL:-}
+      UPLOADS_DIR: /app/uploads
+      # Address autocomplete / geocoding (OpenStreetMap when blank)
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      GEO_CONTACT_EMAIL: ${GEO_CONTACT_EMAIL:-ops@quickcart.example}
+      # Ops alerts
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      AUTO_PROGRESS: ${AUTO_PROGRESS:-true}
+    volumes:
+      - uploads:/app/uploads      # locally stored product photos survive rebuilds
+    ports: ["8080:8080"]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_MAP_TILE_URL: ${MAP_TILE_URL:-}
+        NEXT_PUBLIC_MAP_TILE_ATTRIBUTION: ${MAP_TILE_ATTRIBUTION:-}
+        NEXT_PUBLIC_SUPPORT_PHONE: ${SUPPORT_PHONE:-}
+        NEXT_PUBLIC_SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+    environment:
+      INTERNAL_API_URL: http://backend:8080   # used by the /media image proxy inside Docker
+    depends_on: [backend]
+    ports: ["3000:3000"]
+
+  # ---------------------------------------------------------------- monitoring (optional profile)
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["monitoring"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+    depends_on: [backend]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    profiles: ["monitoring"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3001:3000"]
+    depends_on: [prometheus]
+
+volumes:
+  pgdata:
+  uploads:

@@ -1,0 +1,25 @@
+# Secrets — only the *.example templates are committed
+.env
+.env.*
+!.env.example
+frontend/.env*
+!frontend/.env.example
+
+# Build output & dependencies
+**/node_modules
+**/.next
+frontend/out
+backend/target
+*.tsbuildinfo
+
+# Runtime data
+backend/uploads
+uploads/
+*.log
+
+# Editors / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

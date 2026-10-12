@@ -1,0 +1,172 @@
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: quickcart-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/quickcart}
+    username: ${DB_USERNAME:quickcart}
+    password: ${DB_PASSWORD:quickcart}
+    hikari:
+      maximum-pool-size: 20
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none   # Flyway owns the schema (db/migration)
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc.time_zone: UTC
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  cache:
+    type: caffeine
+    cache-names: categories,stores
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=300s
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+  # Google / GitHub login is switched on automatically when the client ids below are set.
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:disabled}
+            client-secret: ${GOOGLE_CLIENT_SECRET:disabled}
+            scope: openid,profile,email
+          github:
+            client-id: ${GITHUB_CLIENT_ID:disabled}
+            client-secret: ${GITHUB_CLIENT_SECRET:disabled}
+            scope: read:user,user:email
+
+app:
+  uploads-dir: ${UPLOADS_DIR:uploads}
+  routing:
+    osrm-url: ${OSRM_URL:https://router.project-osrm.org}
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000}
+  jwt:
+    # 256-bit+ secret, base64 encoded. Override in production!
+    secret: ${JWT_SECRET:cXVpY2tjYXJ0LWRldi1zZWNyZXQta2V5LWNoYW5nZS1tZS1pbi1wcm9kdWN0aW9uLTEyMzQ1Njc4OTA=}
+    access-token-ttl-minutes: 15
+    refresh-token-ttl-days: 14
+    cookie-secure: ${COOKIE_SECURE:false}
+  rate-limit:
+    requests-per-minute: 120
+    auth-requests-per-minute: 15
+  checkout:
+    reservation-minutes: 10
+    free-delivery-threshold: 199
+    base-delivery-fee: 25
+    far-distance-km: 5
+    far-distance-surcharge: 15
+    handling-fee: 4
+    low-stock-threshold: 10
+    serviceable-radius-km: 12
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY:}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    currency: inr
+  # ---------------------------------------------------------------- Indian payment gateways
+  payments:
+    razorpay:
+      key-id: ${RAZORPAY_KEY_ID:}
+      key-secret: ${RAZORPAY_KEY_SECRET:}
+      webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
+      business-name: ${RAZORPAY_BUSINESS_NAME:QuickCart}
+      theme-color: "#22A04B"
+    phonepe:
+      client-id: ${PHONEPE_CLIENT_ID:}
+      client-secret: ${PHONEPE_CLIENT_SECRET:}
+      client-version: ${PHONEPE_CLIENT_VERSION:1}
+      environment: ${PHONEPE_ENV:SANDBOX}          # SANDBOX | PRODUCTION
+      webhook-username: ${PHONEPE_WEBHOOK_USERNAME:}
+      webhook-password: ${PHONEPE_WEBHOOK_PASSWORD:}
+      expire-after-seconds: 600
+    upi:
+      vpa: ${UPI_VPA:}                             # e.g. quickcart@okaxis — enables Google Pay / any UPI app via intent & QR
+      payee-name: ${UPI_PAYEE_NAME:QuickCart}
+      merchant-code: ${UPI_MERCHANT_CODE:}
+      sandbox-auto-confirm: ${UPI_SANDBOX_AUTO_CONFIRM:true}   # set false in production: the store verifies the UTR
+      sandbox-confirm-seconds: 8
+    webhooks:
+      max-attempts: 8
+  # ---------------------------------------------------------------- product images (object storage + CDN)
+  storage:
+    provider: ${STORAGE_PROVIDER:auto}             # auto | local | supabase | s3
+    cdn-base-url: ${IMAGE_CDN_BASE_URL:}           # e.g. https://dxxxx.cloudfront.net
+    max-dimension: 1600
+    jpeg-quality: 0.82
+    local-dir: ${UPLOADS_DIR:uploads}
+    supabase:
+      url: ${SUPABASE_URL:}
+      service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+      bucket: ${SUPABASE_STORAGE_BUCKET:product-images}
+    s3:
+      endpoint: ${S3_ENDPOINT:}                    # blank for AWS; R2/MinIO/Supabase S3 endpoint otherwise
+      region: ${S3_REGION:ap-south-1}
+      bucket: ${S3_BUCKET:}
+      access-key: ${S3_ACCESS_KEY:}
+      secret-key: ${S3_SECRET_KEY:}
+      public-base-url: ${S3_PUBLIC_BASE_URL:}
+  # ---------------------------------------------------------------- address autocomplete & geocoding
+  geo:
+    google-maps-api-key: ${GOOGLE_MAPS_API_KEY:}   # Places API (New) + Geocoding API; OSM is used when blank
+    nominatim-url: ${NOMINATIM_URL:https://nominatim.openstreetmap.org}
+    photon-url: ${PHOTON_URL:https://photon.komoot.io}
+    osrm-url: ${OSRM_URL:https://router.project-osrm.org}
+    contact-email: ${GEO_CONTACT_EMAIL:ops@quickcart.example}   # sent to Nominatim/Photon as required by their usage policy — set a real address
+    country-code: in
+  # ---------------------------------------------------------------- ops alerts
+  alerts:
+    slack-webhook-url: ${SLACK_WEBHOOK_URL:}
+    order-alerts: true
+    stock-alerts: true
+    payment-alerts: true
+  simulation:
+    # When true, paid orders move to PACKING and OUT_FOR_DELIVERY on their own (handy for demos).
+    auto-progress: ${AUTO_PROGRESS:true}
+    packing-seconds: 20
+    tracking-interval-ms: 3000
+    rider-speed-meters-per-tick: 120
+  seed:
+    admin-email: ${ADMIN_EMAIL:admin@quickcart.dev}
+    admin-password: ${ADMIN_PASSWORD:Admin@123}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    tags:
+      application: quickcart-backend
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        quickcart.external.calls: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    level: "%5p [%X{requestId:-}]"
+  level:
+    com.quickcommerce: INFO
