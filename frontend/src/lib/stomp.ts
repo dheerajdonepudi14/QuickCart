@@ -1,7 +1,7 @@
 'use client';
 
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs';
-import { API_URL } from './api';
+import { API_URL, refreshSession } from './api';
 
 type Listener = (body: unknown) => void;
 type StatusListener = (connected: boolean) => void;
@@ -19,6 +19,8 @@ class StompManager {
   private connected = false;
   private refCount = 0;
   private stopTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Set when the server rejected a frame; the next reconnect renews the session first. */
+  private authRejected = false;
 
   isConnected(): boolean {
     return this.connected;
@@ -48,6 +50,14 @@ class StompManager {
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       debug: () => undefined,
+      // The handshake authenticates with the 15-minute access cookie. After the server rejects a subscription
+      // (cookie expired while the page stayed open), renew the session before reconnecting; if that fails the
+      // user is signed out, so stop instead of retrying with the same dead cookie forever.
+      beforeConnect: async () => {
+        if (!this.authRejected) return;
+        this.authRejected = false;
+        if (!(await refreshSession())) void client.deactivate();
+      },
     });
     client.onConnect = () => {
       this.setConnected(true);
@@ -55,7 +65,10 @@ class StompManager {
       this.listeners.forEach((_set, dest) => this.attach(dest));
     };
     client.onWebSocketClose = () => this.setConnected(false);
-    client.onStompError = () => this.setConnected(false);
+    client.onStompError = () => {
+      this.authRejected = true;
+      this.setConnected(false);
+    };
     this.client = client;
     client.activate();
   }

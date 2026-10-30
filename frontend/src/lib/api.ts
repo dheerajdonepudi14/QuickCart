@@ -43,7 +43,7 @@ function buildUrl(path: string, query?: Query): string {
 
 /** Single-flight refresh so a burst of 401s triggers only one /refresh-token call. */
 let refreshing: Promise<boolean> | null = null;
-async function refreshSession(): Promise<boolean> {
+export async function refreshSession(): Promise<boolean> {
   if (!refreshing) {
     refreshing = fetch(buildUrl('/api/v1/auth/refresh-token'), { method: 'POST', credentials: 'include' })
       .then((r) => r.ok)
