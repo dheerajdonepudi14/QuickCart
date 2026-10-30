@@ -1,0 +1,13 @@
+.env
+**/node_modules
+**/.next
+backend/target
+backend/uploads
+.env.*.local
+*.log
+backend/hs_err_pid*
+backend/replay_pid*
+tools/GroceryStoreDataset/
+frontend/tsconfig.tsbuildinfo
+.vercel
+.env.local

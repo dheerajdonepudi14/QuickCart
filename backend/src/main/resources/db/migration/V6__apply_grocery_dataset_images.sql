@@ -1,0 +1,32 @@
+-- Images sourced from the cloned Grocery Store Dataset project.
+UPDATE products
+SET image_url = CASE id
+            WHEN 1 THEN '/product-images/class-78.jpg'
+            WHEN 2 THEN '/product-images/class-68.jpg'
+            WHEN 3 THEN '/product-images/class-73.jpg'
+            WHEN 4 THEN '/product-images/class-6.jpg'
+            WHEN 5 THEN '/product-images/class-0.jpg'
+            WHEN 7 THEN '/product-images/class-62.jpg'
+            WHEN 8 THEN '/product-images/class-63.jpg'
+            WHEN 10 THEN '/product-images/class-23.jpg'
+            WHEN 12 THEN '/product-images/class-5.jpg'
+            WHEN 13 THEN '/product-images/class-42.jpg'
+            WHEN 14 THEN '/product-images/class-42.jpg'
+            WHEN 19 THEN '/product-images/class-54.jpg'
+            WHEN 58 THEN '/product-images/class-73.jpg'
+            WHEN 65 THEN '/product-images/class-68.jpg'
+            WHEN 68 THEN '/product-images/class-42.jpg'
+            WHEN 76 THEN '/product-images/class-9.jpg'
+            WHEN 77 THEN '/product-images/class-32.jpg'
+            WHEN 78 THEN '/product-images/class-32.jpg'
+            WHEN 92 THEN '/product-images/class-65.jpg'
+            WHEN 107 THEN '/product-images/class-68.jpg'
+            WHEN 124 THEN '/product-images/class-8.jpg'
+            WHEN 142 THEN '/product-images/class-0.jpg'
+            WHEN 149 THEN '/product-images/class-16.jpg'
+            WHEN 152 THEN '/product-images/class-8.jpg'
+            WHEN 171 THEN '/product-images/class-78.jpg'
+            WHEN 178 THEN '/product-images/class-10.jpg'
+            ELSE '/product-images/grocery-default.jpg'
+END
+WHERE TRUE;

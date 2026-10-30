@@ -1,0 +1,91 @@
+# Render Blueprint — QuickCart API (Spring Boot).
+# Database: Supabase Postgres (session pooler, IPv4). Frontend: Vercel.
+# Variables marked `sync: false` are prompted for in the Render dashboard when the Blueprint is applied.
+services:
+  - type: web
+    name: quickcart-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      # Fit the JVM into the 512 MB free instance.
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Xss512k -XX:TieredStopAtLevel=1
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE
+        value: "5"
+
+      # ---------- Database (Supabase → Connect → Session pooler)
+      - key: DB_URL           # jdbc:postgresql://aws-X-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
+        sync: false
+      - key: DB_USERNAME      # postgres.upzktgqyzvpeejuoflcl
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+
+      # ---------- Auth / cross-site cookies (frontend lives on Vercel)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: FRONTEND_URL     # https://<your-app>.vercel.app
+        sync: false
+      - key: CORS_ORIGINS     # same as FRONTEND_URL
+        sync: false
+
+      # ---------- Social login
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI  # https://quickcart-api.onrender.com/login/oauth2/code/google
+        sync: false
+
+      # ---------- Payments (test mode)
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: UPI_SANDBOX_AUTO_CONFIRM
+        value: "true"
+
+      # ---------- Product images: Render's disk is wiped on every deploy, so uploads go to Supabase Storage
+      - key: STORAGE_PROVIDER
+        value: supabase
+      - key: SUPABASE_URL
+        value: https://upzktgqyzvpeejuoflcl.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: product-images
+
+      # ---------- Email + chatbot
+      - key: NOTIFICATIONS_ENABLED
+        sync: false
+      - key: NOTIFICATIONS_FROM
+        sync: false
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_SMTP_AUTH
+        value: "true"
+      - key: MAIL_SMTP_STARTTLS
+        value: "true"
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: AUTO_PROGRESS
+        value: "true"
