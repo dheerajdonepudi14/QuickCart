@@ -1,5 +1,4 @@
-# Render Blueprint — QuickCart API (Spring Boot).
-# Database: Supabase Postgres (session pooler, IPv4). Frontend: Vercel.
+# Render Blueprint — QuickCart API (Spring Boot) + Render Postgres. Frontend: Vercel.
 # Variables marked `sync: false` are prompted for in the Render dashboard when the Blueprint is applied.
 services:
   - type: web
@@ -18,13 +17,17 @@ services:
       - key: SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE
         value: "5"
 
-      # ---------- Database (Supabase → Connect → Session pooler)
-      - key: DB_URL           # jdbc:postgresql://aws-X-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
-        sync: false
-      - key: DB_USERNAME      # postgres.upzktgqyzvpeejuoflcl
-        sync: false
+      # ---------- Database (Render Postgres below; the Dockerfile turns these into a JDBC URL)
+      - key: DB_HOST
+        fromDatabase: { name: quickcart-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: quickcart-db, property: port }
+      - key: DB_NAME
+        fromDatabase: { name: quickcart-db, property: database }
+      - key: DB_USERNAME
+        fromDatabase: { name: quickcart-db, property: user }
       - key: DB_PASSWORD
-        sync: false
+        fromDatabase: { name: quickcart-db, property: password }
 
       # ---------- Auth / cross-site cookies (frontend lives on Vercel)
       - key: JWT_SECRET
@@ -58,15 +61,10 @@ services:
       - key: UPI_SANDBOX_AUTO_CONFIRM
         value: "true"
 
-      # ---------- Product images: Render's disk is wiped on every deploy, so uploads go to Supabase Storage
+      # ---------- Product images: admin uploads go to local disk, which Render wipes on each deploy.
+      # Seeded catalogue photos ship with the frontend, so they are unaffected.
       - key: STORAGE_PROVIDER
-        value: supabase
-      - key: SUPABASE_URL
-        value: https://upzktgqyzvpeejuoflcl.supabase.co
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_STORAGE_BUCKET
-        value: product-images
+        value: local
 
       # ---------- Email + chatbot
       - key: NOTIFICATIONS_ENABLED
@@ -89,3 +87,11 @@ services:
         sync: false
       - key: AUTO_PROGRESS
         value: "true"
+
+databases:
+  - name: quickcart-db
+    plan: free
+    region: singapore
+    databaseName: quickcart
+    user: quickcart
+    ipAllowList: []   # reachable only from Render services
