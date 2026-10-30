@@ -14,6 +14,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.internet.MimeMessage;
 
 import java.net.http.HttpRequest;
@@ -52,6 +53,12 @@ public class EmailService {
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
+    @PostConstruct
+    void logMode() {
+        if (!enabled) log.info("Email notifications disabled (NOTIFICATIONS_ENABLED=false)");
+        else log.info("Email notifications enabled via {} from {}", brevoApiKey.isBlank() ? "SMTP" : "Brevo API", from);
+    }
+
     public void sendWelcome(User user) {
         if (!enabled) return;
         String name = escape(user.getFullName());
@@ -84,6 +91,24 @@ public class EmailService {
                 escape(order.getTotalAmount().toPlainString()), escape(paymentId), escape(gatewayOrderId),
                 escape(frontendUrl), order.getId());
         send(order.getUser().getEmail(), "Order " + order.getOrderNumber() + " confirmed — payment successful", body);
+    }
+
+    /** Cash-on-delivery orders are confirmed at checkout without any payment, so they get their own wording. */
+    public void sendCashOnDeliveryConfirmation(Order order) {
+        if (!enabled) return;
+        String body = """
+                <h2 style="color:#1f2937;margin:0 0 12px">Order confirmed — thank you!</h2>
+                <p>Hi %s, your order is confirmed. Please keep the amount ready and pay when it is delivered.</p>
+                <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:8px;margin:20px 0">
+                  <tr><td style="padding:12px;border-bottom:1px solid #e2e8f0"><strong>Order ID</strong></td><td style="padding:12px;border-bottom:1px solid #e2e8f0">%s</td></tr>
+                  <tr><td style="padding:12px;border-bottom:1px solid #e2e8f0"><strong>Amount to pay on delivery</strong></td><td style="padding:12px;border-bottom:1px solid #e2e8f0">₹%s</td></tr>
+                  <tr><td style="padding:12px"><strong>Payment method</strong></td><td style="padding:12px">Cash on delivery</td></tr>
+                </table>
+                <p>We will keep you updated as your order moves through each delivery stage.</p>
+                <p style="margin-top:24px"><a href="%s/orders/%d" style="background:#16a34a;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:bold">View order</a></p>
+                """.formatted(escape(order.getUser().getFullName()), escape(order.getOrderNumber()),
+                escape(order.getTotalAmount().toPlainString()), escape(frontendUrl), order.getId());
+        send(order.getUser().getEmail(), "Order " + order.getOrderNumber() + " confirmed — cash on delivery", body);
     }
 
     /** Builds the message on the caller's thread, then hands SMTP delivery to a background thread so a slow mail server never blocks checkout or sign-up. */

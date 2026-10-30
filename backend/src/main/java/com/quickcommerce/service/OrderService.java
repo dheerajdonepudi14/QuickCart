@@ -176,6 +176,7 @@ public class OrderService {
         if (order.getStatus() == OrderStatus.ORDER_PLACED) {
             publishStatus(order);
             announceNewOrder(order);
+            emailService.sendCashOnDeliveryConfirmation(order);
         }
         meters.counter("quickcart.orders.created", "payment", req.paymentMethod().name()).increment();
         log.info("Order {} created ({}), total {}", order.getOrderNumber(), req.paymentMethod(), order.getTotalAmount());
