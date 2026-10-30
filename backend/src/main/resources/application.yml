@@ -75,6 +75,7 @@ app:
     enabled: ${NOTIFICATIONS_ENABLED:false}
     from: ${NOTIFICATIONS_FROM:no-reply@quickcart.com}
     logo-url: ${NOTIFICATIONS_LOGO_URL:}
+    brevo-api-key: ${BREVO_API_KEY:}               # set to send via Brevo's HTTPS API instead of SMTP
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000}
   jwt:

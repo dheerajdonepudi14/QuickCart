@@ -1,8 +1,10 @@
 package com.quickcommerce.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quickcommerce.entity.Order;
 import com.quickcommerce.entity.PaymentTransaction;
 import com.quickcommerce.entity.User;
+import com.quickcommerce.integration.ExternalHttp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +16,10 @@ import org.springframework.web.util.HtmlUtils;
 
 import jakarta.mail.internet.MimeMessage;
 
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -21,7 +27,15 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class EmailService {
 
+    private static final String BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email";
+
     private final JavaMailSender mailSender;
+    private final ExternalHttp http;
+    private final ObjectMapper objectMapper;
+
+    /** When set, mail goes through Brevo's HTTPS API instead of SMTP (works on hosts that block SMTP ports). */
+    @Value("${app.notifications.brevo-api-key:}")
+    private String brevoApiKey;
 
     @Value("${app.notifications.enabled:false}")
     private boolean enabled;
@@ -74,6 +88,10 @@ public class EmailService {
 
     /** Builds the message on the caller's thread, then hands SMTP delivery to a background thread so a slow mail server never blocks checkout or sign-up. */
     private void send(String recipient, String subject, String content) {
+        if (!brevoApiKey.isBlank()) {
+            sendViaBrevo(recipient, subject, content);
+            return;
+        }
         MimeMessage message;
         try {
             message = mailSender.createMimeMessage();
@@ -97,6 +115,39 @@ public class EmailService {
         });
     }
 
+    private void sendViaBrevo(String recipient, String subject, String content) {
+        // The API can't reference a cid: inline part, so point the header at the copy the storefront serves.
+        String logo = logoUrl.isBlank() ? frontendUrl.replaceAll("/+$", "") + "/quickcart-email-header.png" : logoUrl;
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(Map.of(
+                    "sender", Map.of("name", "QuickCart", "email", from),
+                    "to", List.of(Map.of("email", recipient)),
+                    "subject", subject,
+                    "htmlContent", html(content, logo)));
+        } catch (Exception ex) {
+            log.error("Could not build email '{}' to {}", subject, recipient, ex);
+            return;
+        }
+        HttpRequest req = ExternalHttp.request(BREVO_SEND_URL, 15)
+                .header("api-key", brevoApiKey)
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json)).build();
+        CompletableFuture.runAsync(() -> {
+            try {
+                HttpResponse<String> res = http.send("brevo", "send_email", req, false);
+                if (res.statusCode() >= 400) {
+                    log.error("Brevo rejected email '{}' to {}: {} {}", subject, recipient, res.statusCode(), res.body());
+                } else {
+                    log.info("Sent email '{}' to {}", subject, recipient);
+                }
+            } catch (Exception ex) {
+                log.error("Could not send email '{}' to {}", subject, recipient, ex);
+            }
+        });
+    }
+
     private String resolveSender() {
         if (from == null || from.isBlank() || from.equals("no-reply@yourcompany.com") ||
                 (smtpUsername != null && !smtpUsername.isBlank() && "smtp.gmail.com".equalsIgnoreCase(System.getenv("MAIL_HOST")))) {
@@ -106,7 +157,10 @@ public class EmailService {
     }
 
     private String html(String content) {
-        String resolvedLogo = logoUrl.isBlank() ? "cid:quickcart-header" : logoUrl;
+        return html(content, logoUrl.isBlank() ? "cid:quickcart-header" : logoUrl);
+    }
+
+    private String html(String content, String resolvedLogo) {
         String logo = "<img src=\"" + escape(resolvedLogo) + "\" alt=\"QuickCart - Fresh groceries, faster\" width=\"620\" style=\"display:block;width:100%;height:auto;border:0\">";
         return """
                 <!doctype html><html><body style="margin:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#334155">
