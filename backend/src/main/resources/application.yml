@@ -171,6 +171,10 @@ management:
   endpoint:
     health:
       show-details: never
+  # An unreachable SMTP server must not mark the whole API as down (hosts use /actuator/health as the liveness probe).
+  health:
+    mail:
+      enabled: false
   metrics:
     tags:
       application: quickcart-backend
