@@ -14,6 +14,8 @@ import org.springframework.web.util.HtmlUtils;
 
 import jakarta.mail.internet.MimeMessage;
 
+import java.util.concurrent.CompletableFuture;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -70,19 +72,29 @@ public class EmailService {
         send(order.getUser().getEmail(), "Order " + order.getOrderNumber() + " confirmed — payment successful", body);
     }
 
+    /** Builds the message on the caller's thread, then hands SMTP delivery to a background thread so a slow mail server never blocks checkout or sign-up. */
     private void send(String recipient, String subject, String content) {
+        MimeMessage message;
         try {
-            MimeMessage message = mailSender.createMimeMessage();
+            message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(resolveSender());
             helper.setTo(recipient);
             helper.setSubject(subject);
             helper.setText(html(content), true);
             helper.addInline("quickcart-header", new ClassPathResource("quickcart-email-header.png"), "image/png");
-            mailSender.send(message);
         } catch (Exception ex) {
-            log.error("Could not send email '{}' to {}", subject, recipient, ex);
+            log.error("Could not build email '{}' to {}", subject, recipient, ex);
+            return;
         }
+        CompletableFuture.runAsync(() -> {
+            try {
+                mailSender.send(message);
+                log.info("Sent email '{}' to {}", subject, recipient);
+            } catch (Exception ex) {
+                log.error("Could not send email '{}' to {}", subject, recipient, ex);
+            }
+        });
     }
 
     private String resolveSender() {
